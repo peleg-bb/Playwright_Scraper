@@ -4,18 +4,27 @@ with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     page = browser.new_page()
     page.goto("https://books.toscrape.com/")
-    titles = []
-    prices = []
+
 
     data = []
     while True:
-        for book in page.locator('article.product_pod').all():
+        books = page.locator('article.product_pod')
+        for b in range(books.count()):
+            book = books.nth(b)
             title = book.locator('h3 a').get_attribute('title')
             price = book.locator('.price_color').text_content()
+            book.locator('h3 a').click()
+            try:
+                description = page.wait_for_selector('#product_description ~ p', timeout=3000).text_content()
+            except Exception as e:
+                description = ''
+                print("Description not found")
             data.append({
                 'title': title,
+                'description': description,
                 'price': float(price.replace('£', '').strip()),
             })
+            page.go_back()
         button = page.locator('.next a')
 
         if button.count() > 0:
